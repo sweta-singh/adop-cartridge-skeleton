@@ -1,8 +1,9 @@
 
 import pluggable.scm.*;
+import adop.cartridge.properties.*;
 
 SCMProvider scmProvider = SCMProviderHandler.getScmProvider("${SCM_PROVIDER_ID}", binding.variables)
-CartridgeProperties cartridgeProperties = new CartridgeProperties("${CARTRIDGE_CUSTOM_PROPERTIES}");
+CartridgeProperties cartridgeProperties = new CartridgeProperties("${CUSTOM_CARTRIDGE_PROPERTIES}")
 
 
 // Folders
@@ -14,7 +15,7 @@ def projectScmNamespace = "${SCM_NAMESPACE}"
 // **The git repo variables will be changed to the users' git repositories manually in the Jenkins jobs**
 // **The git repo variables can be changed to the users' git repositories when loading the cartridge and populating the CARTRIDGE_CUSTOM_PROPERTIES with "scm.code.repo.name" and "scm.test.repo.name" properties.
 def skeletonAppgitRepo = cartridgeProperties.getProperty("scm.code.repo.name", "YOUR_APPLICATION_REPO");
-def regressionTestGitRepo = cartridgeProperties.getProperty("scm.test.repo.name", "YOUR_REGRESSION_TEST_REPO");
+def regressionTestGitRepo = cartridgeProperties.getProperty("scm.test.repo.name", "YOUR_TESTING_REPO");
 
 // ** The logrotator variables should be changed to meet your build archive requirements
 def logRotatorDaysToKeep = 7
@@ -139,6 +140,7 @@ codeAnalysisJob.with{
   environmentVariables {
       env('WORKSPACE_NAME',workspaceFolderName)
       env('PROJECT_NAME',projectFolderName)
+      env('SONAR_PROJECT_KEY', cartridgeProperties.getProperty("sonarProjectKey"))
   }
   wrappers {
     preBuildCleanup()
@@ -148,7 +150,11 @@ codeAnalysisJob.with{
   }
   label("docker")
   steps {
-    shell('''## YOUR CODE ANALYSIS STEPS GO HERE'''.stripMargin())
+    shell('''
+     #!/bin/bash
+     set +x
+     echo "${SONAR_PROJECT_KEY}"
+     ## YOUR CODE ANALYSIS STEPS GO HERE'''.stripMargin())
   }
   publishers{
     downstreamParameterized{
